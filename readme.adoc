@@ -1,8 +1,10 @@
 = Extensible Java Options
+:dep-version: 1.0.0
 
 image:https://img.shields.io/badge/Java-16-ff69b4[]
 image:https://img.shields.io/badge/license-MIT-brightgreen[]
 image:https://img.shields.io/badge/docs-javadoc-blue[link="https://foxcapades.github.io/lib-java-opt/foxcapades.lib.opt/module-summary.html"]
+image:image:https://img.shields.io/maven-central/v/io.foxcapades.lib/opt[link="https://search.maven.org/artifact/io.foxcapades.lib/opt/{dep-version}/jar"]
 
 Provides an alternative, extensible alternative to Java's built-in `Optional`
 type.
@@ -68,6 +70,30 @@ var opt4 = Opt.nonNullOfNullable("goodbye");
 
 // Throws NullPointerException
 var opt5 = Opt.nonNull(null);
+----
+
+=== Dependency Config
+
+.Maven
+[source, xml, subs="+attributes"]
+----
+<dependency>
+  <groupId>io.foxcapades.lib</groupId>
+  <artifactId>opt</artifactId>
+  <version>{dep-version}</version>
+</dependency>
+----
+
+.Gradle Groovy
+[source, groovy, subs="+attributes"]
+----
+implementation 'io.foxcapades.lib:opt:{dep-version}'
+----
+
+.Gradle Kotlin
+[source, kotlin, subs="+attributes"]
+----
+implementation("io.foxcapades.lib:opt:{dep-version}")
 ----
 
 === Factory Building Custom Implementations
