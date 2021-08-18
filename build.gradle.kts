@@ -65,6 +65,12 @@ publishing {
           }
         }
 
+        licenses {
+          license {
+            name.set("MIT")
+          }
+        }
+
         scm {
           connection.set("scm:git:git://github.com/Foxcapades/lib-java-opt.git")
           developerConnection.set("scm:git:ssh://github.com/Foxcapades/lib-java-opt.git")
