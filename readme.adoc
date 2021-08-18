@@ -1,0 +1,105 @@
+= Extensible Java Options
+
+image::https://img.shields.io/badge/Java-16-ff69b4[]
+
+Provides an alternative, extensible alternative to Java's built-in `Optional`
+type.
+
+Additionally, this library adds a "3 state" option type for wrapping values that
+could be present, absent, or `null`.  (The built-in Java option does not support
+wrapping `null`).
+
+== Features
+
+The root of this library is the `Option<T>` interface which is subclassed by the
+interfaces `NullableOption<T>` and `NonNullOption<T>`.
+
+=== `Option<T>`
+
+`Option` is the base interface for the library and includes most if not all the
+features of the built-in `Optional` type.
+
+=== `NonNullOption<T>`
+
+`NonNullOption` extends the `Option` interface and is a more of a direct mirror
+of the built-in `Optional`.  Implementations of this interface do not allow
+wrapping `null` and translate `null` to "empty".
+
+=== `NullableOption<T>`
+
+The `NullableOption<T>` extends the `Option` interface and provides additional
+functionality for dealing with `null` values.
+
+== Usage
+
+The primary entry point for this library is the included `Opt` factory which is
+used to construct the different `Option` types.  This factory includes a
+standard configuration, but may be overridden with an alternate implementation.
+
+.Creating a `NullableOption`
+[source, java]
+----
+// Empty nullable option
+var opt1 = Opt.nullable();
+
+// Nullable option wrapping null
+var opt2 = Opt.nullable(null);
+
+// Nullable option wrapping a non-null value
+var opt3 = Opt.nullable("hello");
+----
+
+.Creating a `NonNullOption`
+[source, java]
+----
+// Empty option
+var opt1 = Opt.nonNull();
+
+// Empty option
+var opt2 = Opt.nonNullOfNullable(null);
+
+// Non-empty option
+var opt3 = Opt.nonNull(1234);
+
+// Non-empty option
+var opt4 = Opt.nonNullOfNullable("goodbye");
+
+// Throws NullPointerException
+var opt5 = Opt.nonNull(null);
+----
+
+=== Factory Building Custom Implementations
+
+Using custom implementations of option types may be used with the option factory
+`Opt` by extending the `Opt` class and setting it as the default/singleton
+instance.
+
+.Overriding to provide a custom null option type.
+[source, java]
+----
+public class MyOpt extends Opt {
+  @Override
+  public <T> NullableOption<T> newNullable() {
+    return new MyOption<>();
+  }
+}
+
+...
+
+Opt.setStandardInstance(new MyOpt());
+
+assert Opt.nullable() instanceof MyOpt;
+----
+
+== Reasoning
+
+In practice, especially when dealing with external APIs, I have personally found
+myself frustrated with the `Optional` type's lack of features, inability to wrap
+`null`, and the fact that the type is `final` so desired features could not even
+be added.
+
+== Why would you want to wrap `null`?
+
+Ideally, you wouldn't.  However, many APIs differentiate between a property
+being absent, vs being present and null, vs being present and not-null.  One
+popular example of such an API would be JSON patch.
