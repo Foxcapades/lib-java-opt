@@ -1,6 +1,8 @@
 = Extensible Java Options
 
-image::https://img.shields.io/badge/Java-16-ff69b4[]
+image:https://img.shields.io/badge/Java-16-ff69b4[]
+image:https://img.shields.io/badge/license-MIT-brightgreen[]
+image:https://img.shields.io/badge/docs-javadoc-blue[link="https://foxcapades.github.io/lib-java-opt/foxcapades.lib.opt/module-summary.html"]
 
 Provides an alternative, extensible alternative to Java's built-in `Optional`
 type.
