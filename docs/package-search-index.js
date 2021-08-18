@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"m":"foxcapades.lib.opt","l":"io.foxcapades.lib.opt"},{"m":"foxcapades.lib.opt","l":"io.foxcapades.lib.opt.impl"}];updateSearchResults();
