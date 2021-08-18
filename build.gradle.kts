@@ -50,8 +50,9 @@ publishing {
       from(components["java"])
 
       pom {
-        name.set("Suppliers for Arrays")
-        description.set("Suppliers with a little extra for array types.")
+        name.set("Extensible Option Types")
+        description.set("Extensible and 3 state option types.")
+        inceptionYear.set("2021")
 
         url.set("https://github.com/Foxcapades/lib-java-array-suppliers")
 
@@ -65,19 +66,13 @@ publishing {
         }
 
         scm {
-          connection.set("scm:git:git://github.com/Foxcapades/lib-java-array-suppliers.git")
-          developerConnection.set("scm:git:ssh://github.com/Foxcapades/lib-java-array-suppliers.git")
-          url.set("https://github.com/Foxcapades/lib-java-array-suppliers")
+          connection.set("scm:git:git://github.com/Foxcapades/lib-java-opt.git")
+          developerConnection.set("scm:git:ssh://github.com/Foxcapades/lib-java-opt.git")
+          url.set("https://github.com/Foxcapades/lib-java-opt")
         }
       }
     }
   }
-}
-
-artifacts {
-  archives(tasks["sourcesJar"])
-  archives(tasks["javadocJar"])
-  archives(tasks["jar"])
 }
 
 signing {
