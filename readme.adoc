@@ -4,7 +4,7 @@
 image:https://img.shields.io/badge/Java-16-ff69b4[]
 image:https://img.shields.io/badge/license-MIT-brightgreen[]
 image:https://img.shields.io/badge/docs-javadoc-blue[link="https://foxcapades.github.io/lib-java-opt/foxcapades.lib.opt/module-summary.html"]
-image:image:https://img.shields.io/maven-central/v/io.foxcapades.lib/opt[link="https://search.maven.org/artifact/io.foxcapades.lib/opt/{dep-version}/jar"]
+image:https://img.shields.io/maven-central/v/io.foxcapades.lib/opt[link="https://search.maven.org/artifact/io.foxcapades.lib/opt/{dep-version}/jar"]
 
 Provides an alternative, extensible alternative to Java's built-in `Optional`
 type.
