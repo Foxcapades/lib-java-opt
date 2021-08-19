@@ -4,6 +4,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -108,6 +109,59 @@ public interface Option<T> {
   T or(@Nullable T other);
 
   /**
+   * Returns either the current option if it is non-empty, else returns the
+   * given alternate option.
+   *
+   * @param other Alternate option to return if this option is empty.
+   *              <p>
+   *              This value must not be {@code null}.
+   *
+   * @return Either the current option, or the given alternate option.
+   *
+   * @throws NullPointerException if the given alternate option is {@code null}.
+   *
+   * @since 1.1.0
+   */
+  @NotNull
+  @Contract(pure = true)
+  default Option<T> orOption(@NotNull Option<T> other) {
+    Objects.requireNonNull(other);
+
+    return isEmpty() ? other : this;
+  }
+
+  /**
+   * Returns either the current option if it is non-empty, else returns the
+   * value supplied by the given {@code Supplier}.
+   * <p>
+   * The given supplier will not be called if this option is non-empty.
+   *
+   * @param supplier Supplier that will be used to retrieve the alternate option
+   *                 if this option is empty.
+   *                 <p>
+   *                 This argument must not be null.
+   *                 <p>
+   *                 This supplier must not return null.
+   *
+   * @return This option if it is non-empty, else the option returned by the
+   * given {@code Supplier}.
+   *
+   * @throws NullPointerException if the given supplier is {@code null} or if
+   * the given {@code Supplier} returns {@code null}.
+   *
+   * @since 1.1.0
+   */
+  @NotNull
+  @Contract(pure = true)
+  default Option<T> orOption(@NotNull Supplier<Option<T>> supplier) {
+    if (isEmpty())
+      return Objects.requireNonNull(supplier.get());
+
+    Objects.requireNonNull(supplier);
+    return this;
+  }
+
+  /**
    * Returns either the value wrapped by this {@code Option}, if it is not
    * empty, or the value returned by the given {@code Supplier}.
    * <p>
@@ -157,7 +211,7 @@ public interface Option<T> {
    *
    * @return The value wrapped by this {@code Option}.  Individual
    * implementations decide whether {@code null} values may be wrapped and
-   * returned.
+   * returned.0
    *
    * @throws E                    Thrown if this {@code Option} is empty.
    * @throws NullPointerException If the given {@code Exception} is

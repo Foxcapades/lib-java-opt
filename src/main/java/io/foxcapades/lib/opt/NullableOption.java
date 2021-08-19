@@ -4,6 +4,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -12,7 +13,7 @@ import java.util.stream.Stream;
 
 /**
  * Nullable Option
- *
+ * <p>
  * {@code NullableOption} represents and immutable wraps a single, nullable
  * value that may or may not exist.
  *
@@ -237,13 +238,13 @@ public interface NullableOption<T> extends Option<T> {
    *
    * @param <E> Type of the exception that will be returned by the given
    *            {@code Supplier} and thrown.
-   *
    * @param fn  {@code Supplier} for the {@code Exception} to throw if this
    *            {@code Option} is empty.
    *            <p>
    *            <b>This argument must not be {@code null}.</b>
    *            <p>
    *            <b>This {@code Supplier} must not return {@code null}.</b>
+   *
    * @return The value wrapped by this {@code Option}.
    *
    * @throws E                    If this {@code Option} is empty.
@@ -267,10 +268,10 @@ public interface NullableOption<T> extends Option<T> {
    * The given {@code Function} may {@code null}.
    *
    * @param <R> The return type of the given mapping {@code Function}.
-   *
    * @param fn  Function to call on the value wrapped by this {@code Option}.
    *            <p>
    *            <b>This argument must not be {@code null}</b>
+   *
    * @return A new {@code Option} of generic type {@code R}.
    *
    * @throws NullPointerException If the given {@code Function} is null.
@@ -296,8 +297,7 @@ public interface NullableOption<T> extends Option<T> {
    * If the called input function returns {@code null}, the output
    * {@code Option} will be non-empty, wrapping a {@code null} value.
    *
-   *  @param <R>       Generic type of the returned {@code Option}.
-   *
+   * @param <R>       Generic type of the returned {@code Option}.
    * @param ifPresent Mapping function to call on the value wrapped by this
    *                  {@code Option}.
    *                  <p>
@@ -308,6 +308,7 @@ public interface NullableOption<T> extends Option<T> {
    * @param ifEmpty   Value supplier to call when this {@code Option} is empty.
    *                  <p>
    *                  <b>This argument must not be {@code null}.</b>
+   *
    * @return A new {@code Option} of generic type {@code R}.
    *
    * @throws NullPointerException If either of the given functions is null.
@@ -332,7 +333,6 @@ public interface NullableOption<T> extends Option<T> {
    * input.
    *
    * @param <R> Generic type of the returned {@code Option}.
-   *
    * @param fn  Mapping function to call if this {@code Option} is not empty.
    *            <p>
    *            <b>This argument must not be null.</b>
@@ -341,6 +341,7 @@ public interface NullableOption<T> extends Option<T> {
    *            <p>
    *            This function will not be called if this {@code Option} is
    *            empty.
+   *
    * @return A new {@code Option} of generic type {@code R}.
    *
    * @throws NullPointerException if the given function is {@code null} or if
@@ -365,7 +366,6 @@ public interface NullableOption<T> extends Option<T> {
    * a {@code null} input value.
    *
    * @param <R>       Generic type for the returned {@code Option}.
-   *
    * @param ifPresent Mapping function to call if this {@code Option} is not
    *                  empty.
    *                  <p>
@@ -377,6 +377,7 @@ public interface NullableOption<T> extends Option<T> {
    *                  <b>This argument must not be null.</b>
    *                  <p>
    *                  <b>This value must not return null.</b>
+   *
    * @return A new {@code Option} of generic type {@code R}.
    *
    * @throws NullPointerException If {@code ifPresent} is {@code null},
@@ -460,6 +461,33 @@ public interface NullableOption<T> extends Option<T> {
   @Override
   @Contract(value = "_ -> this", pure = true)
   NullableOption<T> ifEmpty(@NotNull Runnable fn);
+
+  /**
+   * Executes the given {@code Runnable} if and only if this {@code Option} is
+   * wrapping a {@code null} value.
+   *
+   * @param fn {@code Runnable} to call if this {@code Option} is wrapping
+   *           {@code null}.
+   *           <p>
+   *           This argument must not be null.
+   *
+   * @return This {@code Option} instance.
+   *
+   * @throws NullPointerException if the given {@code Runnable} value is
+   *                              {@code null}.
+   *
+   * @since 1.1.0
+   */
+  @NotNull
+  @Contract(value = "_ -> this", pure = true)
+  default NullableOption<T> ifNull(@NotNull Runnable fn) {
+    if (isNull())
+      fn.run();
+    else
+      Objects.requireNonNull(fn);
+
+    return this;
+  }
 
   /**
    * Executes the given {@code Consumer} {@code ifPresent} on the wrapped value

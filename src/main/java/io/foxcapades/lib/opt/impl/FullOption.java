@@ -125,4 +125,16 @@ public abstract class FullOption<T, I extends Option<T>> implements Option<T> {
   public boolean valueEquals(@Nullable Object value) {
     return Objects.equals(this.value, value);
   }
+
+  @Override
+  public @NotNull Option<T> orOption(@NotNull Option<T> other) {
+    Objects.requireNonNull(other);
+    return this;
+  }
+
+  @Override
+  public @NotNull Option<T> orOption(@NotNull Supplier<Option<T>> supplier) {
+    Objects.requireNonNull(supplier);
+    return this;
+  }
 }

@@ -12,8 +12,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Option factory.
  */
 public class Opt {
-  private static final ReadWriteLock lock            = new ReentrantReadWriteLock();
-  private static       Opt           defaultInstance = new Opt();
+  private static final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+  private static Opt defaultInstance = new Opt();
 
   /**
    * Constructs a new, non-empty option wrapping the given nullable value.

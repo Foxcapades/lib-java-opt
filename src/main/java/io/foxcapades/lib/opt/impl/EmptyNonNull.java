@@ -141,4 +141,14 @@ public record EmptyNonNull<T>() implements NonNullOption<T> {
   public @NotNull NullableOption<T> toNullable(boolean emptyToNull) {
     return emptyToNull ? NullOption.instance() : EmptyNullable.instance();
   }
+
+  @Override
+  public @NotNull Option<T> orOption(@NotNull Option<T> other) {
+    return Objects.requireNonNull(other);
+  }
+
+  @Override
+  public @NotNull Option<T> orOption(@NotNull Supplier<Option<T>> supplier) {
+    return Objects.requireNonNull(supplier.get());
+  }
 }

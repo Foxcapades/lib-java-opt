@@ -138,4 +138,20 @@ public record EmptyNullable<T>() implements NullableOption<T> {
   public boolean valueEquals(@Nullable Object value) {
     return false;
   }
+
+  @Override
+  public @NotNull NullableOption<T> ifNull(@NotNull Runnable fn) {
+    Objects.requireNonNull(fn);
+    return this;
+  }
+
+  @Override
+  public @NotNull Option<T> orOption(@NotNull Option<T> other) {
+    return Objects.requireNonNull(other);
+  }
+
+  @Override
+  public @NotNull Option<T> orOption(@NotNull Supplier<Option<T>> supplier) {
+    return Objects.requireNonNull(supplier.get());
+  }
 }

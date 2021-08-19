@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("NullableOption<T>")
 public abstract class NullableOptionContractTest extends OptionContractTest {
   public static final String NullText = "called on a null option";
+  public static final String NotNullText = "called on a non-null option";
 
   @Override
   protected abstract <T> List<? extends NullableOption<T>> fullOptions(T value);
@@ -266,6 +267,40 @@ public abstract class NullableOptionContractTest extends OptionContractTest {
       @DisplayName("returns true for null inputs.")
       public void t1() {
         assertTrue(nullOption().valueEquals(null), nullOption().getClass().getSimpleName());
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("#ifNull(Runnable)")
+  public class IfNull1 {
+
+    @Nested
+    @DisplayName(NullText)
+    public class Null {
+
+      @Test
+      @DisplayName("calls the given runnable 1 time.")
+      public void t1() {
+        var c = new S.Counter();
+
+        nullOption().ifNull(c::inc);
+
+        assertEquals(1, c.get(), () -> nullOption().getClass().getSimpleName());
+      }
+    }
+
+    @Nested
+    @DisplayName(NotNullText)
+    public class NotNull {
+
+      @Test
+      @DisplayName("does not call the given runnable.")
+      public void t1() {
+        var o = fullOption("Lucifer");
+        assertDoesNotThrow(
+          () -> o.ifNull(() -> { throw new RuntimeException(); }),
+          () -> o.getClass().getSimpleName());
       }
     }
   }

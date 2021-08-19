@@ -5,25 +5,22 @@ import org.junit.jupiter.api.*;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 @DisplayName("Option<T>")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class OptionContractTest {
   protected static final String FNEO     = "called on a non-empty option";
   protected static final String FEO      = "called on an empty option";
-  protected static final String FBO      = "called on either an empty or non-empty option";
+  protected static final String BothText = "called on either an empty or non-empty option";
   protected static final String RetFalse = "returns false.";
   protected static final String RetTrue  = "returns true.";
   protected static final String RetWrap  = "returns the value wrapped by the option.";
   protected static final String NullSup  = "throws a NullPointerException if the given supplier is null";
   protected static final String NullFun  = "throws a NullPointerException if the given function is null";
-
-  protected static final FN0<?> TSup = () -> {throw new RuntimeException();};
 
   protected final OptionContractTest self = this;
 
@@ -79,8 +76,6 @@ public abstract class OptionContractTest {
   public <I> V1<I> tCon()             {return i -> {throw new RuntimeException();};}
 
   public V0 tRun()                    {return () -> {throw new RuntimeException();};}
-
-  public V0 tRun(RuntimeException e)  {return () -> {throw e;};}
 
   public <R> FN0<R> fn0(R val)        {return () -> val;}
 
@@ -192,20 +187,29 @@ public abstract class OptionContractTest {
   @DisplayName("#or(T)")
   protected class Or {
 
-    @TestFactory
+    @Nested
     @DisplayName(FNEO)
-    protected Stream<DynamicNode> nonEmptyOptions() {
-      return inputStream()
-        .map(D.Same(RetWrap, self::fullOption, Option::or, null));
+    public class Full {
+
+      @Test
+      @DisplayName(RetWrap)
+      public void t1() {
+        for (var input : inputList()) {
+          for (var opt : fullOptions(input)) {
+            assertSame(input, opt.or("Sut"), opt.getClass().getSimpleName());
+          }
+        }
+      }
     }
 
     @Nested
     @DisplayName(FEO)
     protected class t2 {
+
       @Test
       @DisplayName("returns the input value.")
       void test1() {
-        A.EQ(234, emptyOption().or(234));
+        assertEquals(234, emptyOption().or(234));
       }
     }
   }
@@ -214,29 +218,60 @@ public abstract class OptionContractTest {
   @DisplayName("#orGet(Supplier<T>)")
   protected class OrGet {
 
-    @TestFactory
+    @Nested
     @DisplayName(FNEO)
-    protected Stream<DynamicNode> nonEmptyOptions() {
-      return inputStream()
-        .flatMap(D.Group(
-          D.Same(RetWrap, self::fullOption, Option::orGet, fn0(3)),
-          D.DNT("does not call the given supplier.", self::fullOption, Option::orGet, tSup())));
+    public class Full {
+
+      @Test
+      @DisplayName(RetWrap)
+      public void t1() {
+        for (var input : inputList()) {
+          for (var opt : fullOptions(input)) {
+            assertSame(input, opt.orGet(() -> "Seir"));
+          }
+        }
+      }
+
+      @Test
+      @DisplayName("does not call the given supplier.")
+      public void t2() {
+        for (var opt : fullOptions("Orobas")) {
+          assertDoesNotThrow(() -> opt.orGet(() -> { throw new RuntimeException(); }), opt.getClass().getSimpleName());
+        }
+      }
     }
 
-    @TestFactory
+    @Nested
     @DisplayName(FEO)
-    protected Stream<DynamicNode> forEmptyOptions() {
-      return Stream.of(
-        dynamicTest(
-          "returns the value provided by the given supplier",
-          () -> inputStream().forEach(v -> A.Same(v, emptyOption().orGet(fn0(v))))));
+    public class Empty {
+
+      @Test
+      @DisplayName("returns the value provided by the given supplier.")
+      public void t1() {
+        for (var input : inputList()) {
+          for (var opt : emptyOptions()) {
+            assertSame(input, opt.orGet(() -> input), opt.getClass().getSimpleName());
+          }
+        }
+      }
     }
 
-    @TestFactory
-    @DisplayName(FBO)
-    protected Stream<DynamicNode> forBothOptions() {
-      return allOptionStream(3)
-        .map(D.ThrowsNPE(NullSup, Option::orGet, self.<Integer>nullSup()));
+    @Nested
+    @DisplayName(BothText)
+    public class Both {
+
+      @Test
+      @DisplayName(NullSup)
+      public void t1() {
+        for (var opt : allOptions("Cerbere")) {
+          //noinspection ConstantConditions,ResultOfMethodCallIgnored
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.orGet(null),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
     }
   }
 
@@ -270,15 +305,26 @@ public abstract class OptionContractTest {
       }
     }
 
-    @TestFactory
+    @Nested
     @DisplayName(FEO)
-    protected Stream<DynamicNode> empty() {
-      return Stream.of(emptyOption())
-        .map(D.Throws("throws the given exception.", Option::orThrow, new IllegalArgumentException()));
+    public class Empty {
+
+      @Test
+      @DisplayName("throws the given exception.")
+      public void t1() {
+        for (var opt : emptyOptions()) {
+          //noinspection ResultOfMethodCallIgnored
+          assertThrows(
+            IllegalStateException.class,
+            () -> opt.orThrow(new IllegalStateException()),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
     }
 
     @Nested
-    @DisplayName(FBO)
+    @DisplayName(BothText)
     public class Both {
 
       @Test
@@ -298,42 +344,92 @@ public abstract class OptionContractTest {
 
   @Nested
   @DisplayName("#orElseThrow(Supplier<E>)")
-  protected class OrThrow2 {
+  public class OrThrow2 {
 
-    @TestFactory
+    @Nested
     @DisplayName(FNEO)
-    protected Stream<DynamicNode> forNonEmptyOptions() {
-      N2<Option<Object>, FN0<RuntimeException>, Object> fn = Option::orElseThrow;
+    public class Full {
 
-      return fullOptions().flatMap(D.Group(
-        D.DNT("does not throw the given exception.", fn, RuntimeException::new),
-        D.DNT("does not call the given supplier.", fn, tSup())
-      ));
+      @Test
+      @DisplayName("does not throw the given exception.")
+      public void t1() {
+        for (var opt : fullOptions("Foraii")) {
+          assertDoesNotThrow(
+            () -> opt.orElseThrow(RuntimeException::new),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
+
+      @Test
+      @DisplayName("does not call the given supplier.")
+      public void t2() {
+        for (var opt : fullOptions("Mammon")) {
+          assertDoesNotThrow(
+            () -> opt.orElseThrow(() -> {throw new RuntimeException();}),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
+
+      @Test
+      @DisplayName("returns the wrapped value.")
+      public void t3() {
+        for (var input : inputList()) {
+          for (var opt : fullOptions(input)) {
+            assertSame(input, opt.orElseThrow(RuntimeException::new), opt.getClass().getSimpleName());
+          }
+        }
+      }
     }
 
     @Nested
     @DisplayName(FEO)
-    protected class t2 {
+    public class Empty {
 
       @Test
       @DisplayName("throws the given exception.")
-      void test4() {
-        //noinspection ResultOfMethodCallIgnored
-        A.Throws(IllegalStateException.class, () -> emptyOption().orElseThrow(IllegalStateException::new));
+      public void t1() {
+        for (var opt : emptyOptions()) {
+          //noinspection ResultOfMethodCallIgnored
+          assertThrows(
+            IllegalStateException.class,
+            () -> opt.orElseThrow(IllegalStateException::new),
+            opt.getClass().getSimpleName()
+          );
+        }
       }
 
       @Test
       @DisplayName("throws a NullPointerException when the given Supplier returns null.")
-      void test6() {
-        //noinspection LambdaBodyCanBeCodeBlock,ResultOfMethodCallIgnored
-        A.ThrowsNPE(() -> emptyOption().orElseThrow(nullRetSup()));
+      public void t2() {
+        for (var opt : emptyOptions()) {
+          //noinspection ResultOfMethodCallIgnored
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.orElseThrow(nullRetSup()),
+            opt.getClass().getSimpleName()
+          );
+        }
       }
     }
 
-    @TestFactory
-    @DisplayName(FBO)
-    protected Stream<DynamicNode> forBoth() {
-      return allOptionStream(420).map(D.ThrowsNPE(NullSup, Option::orElseThrow, self.<RuntimeException>nullSup()));
+    @Nested
+    @DisplayName(BothText)
+    public class Both {
+
+      @Test
+      @DisplayName(NullSup)
+      public void t1() {
+        for (var opt : allOptions("Lilith")) {
+          //noinspection ResultOfMethodCallIgnored
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.orElseThrow(nullSup()),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
     }
   }
 
@@ -398,7 +494,7 @@ public abstract class OptionContractTest {
     }
 
     @Nested
-    @DisplayName(FBO)
+    @DisplayName(BothText)
     protected class Both {
 
       @Test
@@ -415,17 +511,6 @@ public abstract class OptionContractTest {
           }
         }
       }
-    }
-
-    @TestFactory
-    @DisplayName(FBO)
-    protected Stream<DynamicNode> forBothOptions() {
-      return allOptionStream("grapes")
-        .map(D.ThrowsNPE(
-          "throws a NullPointerException if the given input is null.",
-          Option::map,
-          nullMap()
-        ));
     }
   }
 
@@ -464,47 +549,80 @@ public abstract class OptionContractTest {
       }
     }
 
-    @TestFactory
+    @Nested
     @DisplayName(FEO)
-    protected Stream<DynamicNode> empty() {
-      FN3<Option<Object>, N1<Object, Object>, FN0<Object>, Object> fn = Option::map;
+    public class Empty {
 
-      return Stream.of(emptyOption())
-        .flatMap(D.Group(
-          D.DNT("does not call the given mapping function.", fn, tMap(), Object::new),
-          D.Test("calls the given supplier.", o -> {
-            final var c = new S.Counter();
+      @Test
+      @DisplayName("does not call the given mapping function.")
+      public void t1() {
+        for (var opt : emptyOptions()) {
+          assertDoesNotThrow(
+            () -> opt.map(tMap(), Object::new),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
 
-            //noinspection ResultOfMethodCallIgnored
-            o.map(tMap(), () -> {
-              c.inc();
-              return null;
-            });
+      @Test
+      @DisplayName("calls the given supplier 1 time.")
+      public void t2() {
+        for (var opt : emptyOptions()) {
+          var c = new S.Counter();
 
-            A.EQ(1, c.get());
-          }),
-          D.Test("returns an option wrapping the value supplied by the given supplier.", o -> {
-            final var r = "potato";
+          //noinspection ResultOfMethodCallIgnored
+          opt.map(tMap(), () -> c.inc(new Object()));
 
-            A.Same(r, o.map(tMap(), fn0(r)).unwrap());
-          })
-        ));
+          assertEquals(1, c.get(), opt.getClass().getSimpleName());
+        }
+      }
+
+      @Test
+      @DisplayName("returns an option wrapping the value supplied by the given supplier.")
+      public void t3() {
+        for (var input : inputList()) {
+          for (var opt : emptyOptions()) {
+            assertSame(input, opt.map(tMap(), () -> input).unwrap(), opt.getClass().getSimpleName());
+          }
+        }
+      }
     }
 
-    @TestFactory
-    @DisplayName(FBO)
-    protected Stream<DynamicNode> forBothEmptyAndNonEmptyOptions() {
-      return allOptionStream("hiya")
-        .flatMap(D.Group(
-          D.ThrowsNPE("throws a NullPointerException if arg 1 is null.", Option::map, nullMap(), fn0(3)),
-          D.ThrowsNPE("throws a NullPointerException if arg 2 is null.", Option::map, fn1(3), nullSup())));
+    @Nested
+    @DisplayName(BothText)
+    public class Both {
+
+      @Test
+      @DisplayName("throws a NullPointerException if arg 1 is null.")
+      public void t1() {
+        for (var opt : allOptions("Jinn")) {
+          //noinspection ResultOfMethodCallIgnored
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.map(nullMap(), () -> "Ipes"),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
+
+      @Test
+      @DisplayName("throws a NullPointerException if arg 2 is null.")
+      public void t2() {
+        for (var opt : allOptions("Malthus")) {
+          //noinspection ResultOfMethodCallIgnored
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.map(fn1("Haagenti"), nullSup()),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
     }
   }
 
   @Nested
   @DisplayName("#flatMap(Function<T, Option<R>)")
   protected class FlatMap1 {
-    static final N2<Option<Object>, N1<Object, Option<Object>>, Option<? super Object>> fn = Option::flatMap;
 
     @Nested
     @DisplayName(FNEO)
@@ -551,19 +669,38 @@ public abstract class OptionContractTest {
       }
     }
 
-    @TestFactory
+    @Nested
     @DisplayName(FEO)
-    protected Stream<DynamicNode> forEmpty() {
-      N1<Object, Option<Object>> errFMap = x -> {throw new RuntimeException();};
+    public class Empty {
 
-      return Stream.of(emptyOption())
-        .map(D.DNT("does not call the given mapping function", fn, errFMap));
+      @Test
+      @DisplayName("does not call the given mapping function.")
+      public void t1() {
+        for (var opt : emptyOptions()) {
+          assertDoesNotThrow(
+            () -> opt.flatMap(tMap()),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
     }
 
-    @TestFactory
-    @DisplayName(FBO)
-    protected Stream<DynamicNode> forBoth() {
-      return allOptionStream(666).map(D.ThrowsNPE(NullFun, Option::flatMap, self.<Integer, Option<Object>>nullMap()));
+    @Nested
+    @DisplayName(BothText)
+    public class Both {
+
+      @Test
+      @DisplayName(NullFun)
+      public void t1() {
+        for (var opt : allOptions("Gader'el")) {
+          //noinspection ResultOfMethodCallIgnored,ConstantConditions
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.flatMap(null),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
     }
   }
 
@@ -627,14 +764,35 @@ public abstract class OptionContractTest {
       }
     }
 
-    @TestFactory
-    @DisplayName(FBO)
-    protected Stream<DynamicNode> both() {
-      FN3<Option<String>, N1<String, Option<Object>>, FN0<Option<Object>>, Option<Object>> fn = Option::flatMap;
-      return allOptionStream("yellow").flatMap(D.Group(
-        D.ThrowsNPE("throws a NullPointerException if arg1 is null", fn, nullMap(), self::emptyOption),
-        D.ThrowsNPE("throws a NullPointerException if arg1 is null", fn, self::fullOption, nullSup())
-      ));
+    @Nested
+    @DisplayName(BothText)
+    public class Both {
+
+      @Test
+      @DisplayName("throws a NullPointerException if arg 1 is null.")
+      public void t1() {
+        for (var opt : allOptions("Belphegor")) {
+          //noinspection ConstantConditions,ResultOfMethodCallIgnored
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.flatMap(null, OptionContractTest.this::emptyOption),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
+
+      @Test
+      @DisplayName("throws a NullPointerException if arg 2 is null.")
+      public void t2() {
+        for (var opt : allOptions("Andras")) {
+          //noinspection ResultOfMethodCallIgnored,ConstantConditions
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.flatMap(OptionContractTest.this::fullOption, null),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
     }
   }
 
@@ -679,42 +837,68 @@ public abstract class OptionContractTest {
   @DisplayName("#ifPresent(Consumer<T>)")
   protected class IfPresent1 {
 
-    protected <I> N2<Option<I>, V1<I>, Option<I>> ref() {
-      return Option::ifPresent;
-    }
-
-    @TestFactory
+    @Nested
     @DisplayName(FNEO)
-    protected Stream<DynamicNode> full() {
-      return fullOptions().map(
-        D.Test("calls the given consumer with the wrapped value", o -> {
-          var c = new S.Counter();
+    public class Full {
 
-          o.ifPresent(i -> {
-            c.inc();
-            A.Same(o.unwrap(), i);
-          });
+      @Test
+      @DisplayName("calls the given consumer with the wrapped value.")
+      public void t1() {
+        for (var input : inputList()) {
+          for (var opt : fullOptions(input)) {
+            var c = new S.Counter();
 
-          A.EQ(1, c.get());
-        })
-      );
+            opt.ifPresent(x -> {
+              c.inc();
+              assertSame(input, x, opt.getClass().getSimpleName());
+            });
+
+            assertEquals(1, c.get(), opt.getClass().getSimpleName());
+          }
+        }
+      }
     }
 
-    @TestFactory
+    @Nested
     @DisplayName(FEO)
-    protected Stream<DynamicNode> empty() {
-      return Stream.of(emptyOption())
-        .map(D.DNT("does not call the given consumer", ref(), tCon()));
+    public class Empty {
+
+      @Test
+      @DisplayName("does not call the given consumer.")
+      public void t1() {
+        for (var opt : emptyOptions()) {
+          assertDoesNotThrow(
+            () -> opt.ifPresent(tCon()),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
     }
 
-    @TestFactory
-    @DisplayName(FBO)
-    protected Stream<DynamicNode> both() {
-      return allOptionStream(321)
-        .flatMap(D.Group(
-          D.ThrowsNPE("throws a NullPointerException if the given consumer is null", ref()),
-          D.ThisReturn(ref(), v1())
-        ));
+    @Nested
+    @DisplayName(BothText)
+    public class Both {
+
+      @Test
+      @DisplayName("throws a NullPointerException if the given consumer is null.")
+      public void t1() {
+        for (var opt : allOptions("Mephistopheles")) {
+          //noinspection ConstantConditions
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.ifPresent(null),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
+
+      @Test
+      @DisplayName("returns the current option instance.")
+      public void t2() {
+        for (var opt : allOptions("Penemue")) {
+          assertSame(opt, opt.ifPresent(x -> {}), opt.getClass().getSimpleName());
+        }
+      }
     }
   }
 
@@ -722,33 +906,63 @@ public abstract class OptionContractTest {
   @DisplayName("#ifEmpty(Runnable)")
   protected class IfEmpty1 {
 
-    protected static class DerpX extends RuntimeException {}
-
-    protected static <I> N2<Option<I>, V0, Option<I>> ref() {
-      return Option::ifEmpty;
-    }
-
-    @TestFactory
+    @Nested
     @DisplayName(FNEO)
-    protected Stream<DynamicNode> full() {
-      return fullOptions().map(D.DNT("does not call the given runnable", ref(), tRun()));
+    public class Full {
+
+      @Test
+      @DisplayName("does not call the given runnable.")
+      public void t1() {
+        for (var opt : fullOptions("Shaitan")) {
+          assertDoesNotThrow(
+            () -> opt.ifEmpty(tRun()),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
     }
 
-    @TestFactory
+    @Nested
     @DisplayName(FEO)
-    protected Stream<DynamicNode> empty() {
-      return emptyOptions()
-        .stream()
-        .map(D.Throws("calls the given runnable", DerpX.class, ref(), tRun(new DerpX())));
+    public class Empty {
+
+      @Test
+      @DisplayName("calls the given runnable 1 time.")
+      public void t1() {
+        for (var opt : emptyOptions()) {
+          var c = new S.Counter();
+
+          opt.ifEmpty(c::inc);
+
+          assertEquals(1, c.get(), opt.getClass().getSimpleName());
+        }
+      }
     }
 
-    @TestFactory
-    @DisplayName(FBO)
-    protected Stream<DynamicNode> both() {
-      return allOptionStream(666).flatMap(D.Group(
-        D.ThrowsNPE("throws a NullPointerException if the given runnable is null", ref()),
-        D.ThisReturn(ref(), v0())
-      ));
+    @Nested
+    @DisplayName(BothText)
+    public class Both {
+
+      @Test
+      @DisplayName("throws a NullPointerException if the given runnable is null.")
+      public void t1() {
+        for (var opt : allOptions("Satan")) {
+          //noinspection ConstantConditions
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.ifEmpty(null),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
+
+      @Test
+      @DisplayName("returns the current option instance.")
+      public void t2() {
+        for (var opt : allOptions("Vepar")) {
+          assertSame(opt, opt.ifEmpty(() -> {}), opt.getClass().getSimpleName());
+        }
+      }
     }
   }
 
@@ -756,41 +970,66 @@ public abstract class OptionContractTest {
   @DisplayName("#with(Consumer<T>, Runnable)")
   protected class With1 {
 
-    protected static class DerpY extends RuntimeException {}
-
-    protected <I> FN3<Option<I>, V1<I>, V0, Option<I>> ref() {
-      return Option::with;
-    }
-
-    @TestFactory
+    @Nested
     @DisplayName(FNEO)
-    protected Stream<DynamicNode> full() {
-      return fullOptions().flatMap(D.Group(
-        D.Test("calls the given consumer with the wrapped value", o -> {
-          var c = new S.Counter();
+    public class Full {
 
-          o.with(i -> {
-            c.inc();
-            A.Same(o.unwrap(), i);
-          }, v0());
+      @Test
+      @DisplayName("calls the given consumer with the wrapped value.")
+      public void t1() {
+        for (var input : inputList()) {
+          for (var opt : fullOptions(input)) {
+            var c = new S.Counter();
 
-          A.EQ(1, c.get());
-        }),
-        D.DNT("does not call the given runnable", ref(), v1(), tRun())
-      ));
-    }
+            opt.with(x -> assertSame(input, c.inc(x), opt.getClass().getSimpleName()), () -> {});
 
-    @TestFactory
-    @DisplayName(FEO)
-    protected Stream<DynamicNode> empty() {
-      return emptyOptions().stream().flatMap(D.Group(
-        D.DNT("does not call the given consumer", ref(), tCon(), v0()),
-        D.Throws("calls the given runnable", DerpY.class, ref(), tCon(), tRun(new DerpY()))
-      ));
+            assertEquals(1, c.get(), opt.getClass().getSimpleName());
+          }
+        }
+      }
+
+      @Test
+      @DisplayName("does not call the given runnable.")
+      public void t2() {
+        for (var opt : fullOptions("Ukobach")) {
+          assertDoesNotThrow(
+            () -> opt.with(v1(), tRun()),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
     }
 
     @Nested
-    @DisplayName(FBO)
+    @DisplayName(FEO)
+    public class Empty {
+
+      @Test
+      @DisplayName("does not call the given consumer.")
+      public void t1() {
+        for (var opt : emptyOptions()) {
+          assertDoesNotThrow(
+            () -> opt.with(tCon(), v0()),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
+
+      @Test
+      @DisplayName("calls the given runnable 1 time.")
+      public void t2() {
+        for (var opt : emptyOptions()) {
+          var c = new S.Counter();
+
+          opt.with(tCon(), c::inc);
+
+          assertEquals(1, c.get(), opt.getClass().getSimpleName());
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName(BothText)
     public class Both {
 
       @Test
@@ -823,10 +1062,6 @@ public abstract class OptionContractTest {
   @DisplayName("#filter(Predicate<T>)")
   protected class Filter1 {
 
-    protected static <I> N2<Option<I>, Predicate<I>, Option<I>> ref() {
-      return Option::filter;
-    }
-
     @Nested
     @DisplayName(FNEO)
     protected class Full {
@@ -852,22 +1087,42 @@ public abstract class OptionContractTest {
       }
     }
 
-    @TestFactory
+    @Nested
     @DisplayName(FEO)
-    protected Stream<DynamicNode> empty() {
-      return emptyOptions()
-        .stream()
-        .flatMap(D.Group(
-          D.DNT("does not call the given predicate", ref(), tP()),
-          D.Test("returns an empty option", i -> A.True(i.filter(tP()).isEmpty()))
-        ));
+    public class Empty {
+
+      @Test
+      @DisplayName("does not call the given predicate.")
+      public void t1() {
+        for (var opt : emptyOptions()) {
+          assertDoesNotThrow(() -> opt.filter(tP()), opt.getClass().getSimpleName());
+        }
+      }
+
+      @Test
+      @DisplayName("returns an empty option.")
+      public void t2() {
+        for (var opt : emptyOptions()) {
+          assertTrue(opt.filter(tP()).isEmpty(), opt.getClass().getSimpleName());
+        }
+      }
     }
 
-    @TestFactory
-    @DisplayName(FBO)
-    protected Stream<DynamicNode> both() {
-      return allOptionStream(69)
-        .map(D.ThrowsNPE("throws a NullPointerException if the given predicate is null", ref()));
+    @Nested
+    @DisplayName(BothText)
+    public class Both {
+
+      @Test
+      @DisplayName("throws a NullPointerException if the given predicate is null.")
+      public void t1() {
+        for (var opt : allOptions("Xaphan")) {
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.filter(null),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
     }
   }
 
@@ -903,6 +1158,121 @@ public abstract class OptionContractTest {
       void t1() {
         for (var opt : emptyOptions())
           assertFalse(opt.valueEquals(null), opt.getClass().getSimpleName());
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("#orOption(Option<T>)")
+  public class OrOption1 {
+
+    @Nested
+    @DisplayName(FNEO)
+    public class Full {
+
+      @Test
+      @DisplayName("does not return the given option.")
+      public void t1() {
+        for (var opt : fullOptions("serpent")) {
+          for (var other : fullOptions("blow your trumpets Gabriel")) {
+            assertSame(opt, opt.orOption(other), opt.getClass().getSimpleName());
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName(FEO)
+    public class Empty {
+
+      @Test
+      @DisplayName("returns the given option.")
+      public void t1() {
+        for (var opt : OptionContractTest.this.<String>emptyOptions()) {
+          for (var other : fullOptions("embrace the void")) {
+            assertSame(other, opt.orOption(other), opt.getClass().getSimpleName());
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName(BothText)
+    public class Both {
+
+      @Test
+      @DisplayName("throws a NullPointerException if the input value is null.")
+      public void t1() {
+        for (var opt : allOptions("in the absence of light")) {
+          //noinspection ResultOfMethodCallIgnored,ConstantConditions
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.orOption((Option<String>) null),
+            opt.getClass().getSimpleName()
+          );
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("#orOption(Supplier<Option<T>>)")
+  public class OrOption2 {
+
+    @Nested
+    @DisplayName(FNEO)
+    public class Full {
+
+      @Test
+      @DisplayName("does not return the given option.")
+      public void t1() {
+        for (var opt : fullOptions("Armaros")) {
+          for (var other : fullOptions("blood worship")) {
+            assertSame(opt, opt.orOption(() -> other), opt.getClass().getSimpleName());
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName(FEO)
+    public class Empty {
+
+      @Test
+      @DisplayName("returns the option supplied by the given function.")
+      public void t1() {
+        for (var opt : OptionContractTest.this.<String>emptyOptions()) {
+          for (var other : fullOptions("Ifrit")) {
+            assertSame(other, opt.orOption(() -> other), opt.getClass().getSimpleName());
+          }
+        }
+      }
+
+      @Test
+      @DisplayName("throws a NullPointerException if the given supplier returns null.")
+      public void t2() {
+        for (var opt : emptyOptions()) {
+          //noinspection ResultOfMethodCallIgnored
+          assertThrows(NullPointerException.class, () -> opt.orOption(() -> null), opt.getClass().getSimpleName());
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName(BothText)
+    public class Both {
+
+      @Test
+      @DisplayName("throws a NullPointerException if the input value is null.")
+      public void t1() {
+        for (var opt : allOptions("burn heaven down")) {
+          //noinspection ResultOfMethodCallIgnored,ConstantConditions
+          assertThrows(
+            NullPointerException.class,
+            () -> opt.orOption((Supplier<Option<String>>) null),
+            opt.getClass().getSimpleName()
+          );
+        }
       }
     }
   }

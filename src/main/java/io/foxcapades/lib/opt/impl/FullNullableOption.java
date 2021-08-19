@@ -59,4 +59,14 @@ public class FullNullableOption<T> extends FullOption<T, NullableOption<T>> impl
   public NonNullOption<T> toNonNullable() {
     return value == null ? Opt.standard().newNonNull() : Opt.standard().newNonNull(value);
   }
+
+  @Override
+  public @NotNull NullableOption<T> ifNull(@NotNull Runnable fn) {
+    if (value == null)
+      fn.run();
+    else
+      Objects.requireNonNull(fn);
+
+    return this;
+  }
 }

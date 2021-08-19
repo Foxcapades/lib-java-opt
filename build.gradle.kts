@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
 plugins {
   `java-library`
   `maven-publish`
@@ -5,7 +7,7 @@ plugins {
 }
 
 group = "io.foxcapades.lib"
-version = "1.0.0"
+version = "1.1.0"
 
 repositories {
   mavenLocal()
@@ -30,6 +32,14 @@ dependencies {
 
 tasks.test {
   useJUnitPlatform()
+
+  testLogging {
+    events = setOf(
+      TestLogEvent.PASSED,
+      TestLogEvent.FAILED,
+      TestLogEvent.SKIPPED,
+    )
+  }
 }
 
 publishing {
